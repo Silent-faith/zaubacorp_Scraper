@@ -1,0 +1,74 @@
+from time import sleep
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup as bs
+import pandas as pd 
+
+driver = webdriver.Chrome('C:/Users/Abhishek Choudhary/.spyder-py3/chromedriver.exe')
+
+driver.get("https://www.zaubacorp.com/companysearchresults/Hospitals") 
+
+
+
+count = 0 
+
+df = [] 
+
+for page in range(50):
+    try :
+        source = driver.page_source
+        data=bs(source, 'html.parser')
+        data = data.find('tbody')
+        list_of_companys = data.find_all('tr')
+        
+        
+        #print("------------------------")
+        #print()
+        #print(len(list_of_companys),page)
+        #print(list_of_companys[0])
+        #print()
+        #print("------------------------")
+        
+        for i in list_of_companys :
+            list_of_data = i.find_all('td')
+            
+            CIN = list_of_data[0].find('h5').text
+            
+            link = list_of_data[1].find('a').get("href")
+            name = list_of_data[1].find('h5').text
+            address = list_of_data[2].text
+            
+            #print("cin :", CIN)
+            #print("link :", link)
+            #print("name :", name)
+            #print("address :", address)
+            
+            new_df = [CIN, name, link,  address]
+            #print(new_df)
+            df.append(new_df)
+            count += 1
+        
+        if page == 49 :
+            break 
+        s = "//a[text()='{point}']".format(point = str(page+2))
+        point = driver.find_element_by_xpath(s)
+        point.click()
+        sleep(3)
+        
+    except:
+        print(page+2) 
+        pass
+    
+    
+
+
+df = pd.DataFrame(df, columns= ['CIN-number', 'name', 'link', 'address']) 
+
+try : 
+    df_intial = pd.read_csv("Bid_data.csv")
+    frames = [df, df_intial]
+    df = pd.concat(frames, ignore_index=True)
+except :
+    pass
+df.to_csv("Bid_data.csv")
+print(count)
